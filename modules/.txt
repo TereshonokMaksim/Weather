@@ -1,0 +1,54 @@
+import sqlite3
+import os, json
+import modules.find_path as fp
+
+os.chdir(fp.search_path("data"))
+database = sqlite3.connect("UserData.dp")
+cursor = database.cursor()
+
+def create_table(name: str, columns: dict = {"column_name": "column_type"}):
+    os.chdir(fp.search_path("data"))
+    column_command = ""
+    for column_name in columns:
+        column_command += f", {column_name} {columns[column_name].capitalize()}" 
+    cursor.execute(f"CREATE TABLE IF NOT EXISTS {name} ({column_command[2:]})")
+    database.commit()
+
+def create_columns(name_table: str, columns: dict = {"column_name": "type_column"}):
+    os.chdir(fp.search_path("data"))
+    for column_name in columns:
+        cursor.execute(f"ALTER TABLE {name_table} ADD COLUMN {column_name} {columns[column_name]}")
+        database.commit()
+
+def add_data(name_table: str, add_info: dict = {"column name": "new_value_in_this_column"}):
+    os.chdir(fp.search_path("data"))
+    column_names = ""
+    values = []
+    quesion_marks = ""
+    for name in add_info:
+        column_names += f", {name}"
+        quesion_marks += ", ?"
+        values.append(add_info[name])
+    
+    action = f"INSERT INTO {name_table} ({column_names[2:]}) VALUES ({quesion_marks[2:]})"
+    print(action, "\n", values)
+    cursor.execute(action, values)
+    database.commit()    
+    
+def read_data(name_table):
+    cursor.execute(f"SELECT * FROM {name_table}")
+    return cursor.fetchall()
+
+def read_data_by_id(name_table: str = "main"):
+    data = read_data(name_table)
+    with open(fp.search_path("data\\id.json"), "r") as file:
+        id = json.load(file)["ID"]
+    if len(data) - 2 >= id:
+        data = data[id + 1]
+        return {"Country": data[1],
+                "City": data[2],
+                "Name": data[3],
+                "Surname": data[4]}
+    else:
+        return f"Error: ID {id} is not registered."
+    
