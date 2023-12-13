@@ -160,8 +160,14 @@ def activate_window(user_data: dict, data_reg_window_fun, database_funcs: dict =
         for hour_forecast in hours:
             hour = hour_forecast["time"].split(" ")[1]
             if len(forecast_nine_hours) < 9:
-                forecast_nine_hours.update({hour: [fp.search_path(f"images\\icons\\{hour_forecast['condition']['text']}_icon.png"), f"{round(hour_forecast['temp_c'])}°",
-                                                    hour_forecast["condition"]]})
+                if not os.path.exists(f"images\\icons\\{hour_forecast['condition']['text']}_icon.png"):
+                    os.chdir(fp.search_path("images\\icons"))
+                    icon_name = api_data['current']['condition']['text'].split(" ")
+                    icon_name = f"{api_data['current']['condition']['text']}_icon.png"
+                    urllib.request.urlretrieve(hour_forecast["condition"]["icon"], icon_name)
+                    os.chdir(__file__ + "/..")
+                    forecast_nine_hours.update({hour: [fp.search_path(f"images\\icons\\{hour_forecast['condition']['text']}_icon.png"), f"{round(hour_forecast['temp_c'])}°",
+                                                        hour_forecast["condition"]]})
         
         if len(hour_forecast_tables) != 0:
             forecast_nine_hours_keys = list(forecast_nine_hours)
