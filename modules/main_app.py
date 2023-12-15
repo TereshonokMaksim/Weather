@@ -15,6 +15,7 @@ city, api_data = "Дніпро", ""
 main_app_existing = False
 info_about_other_places = {}
 api_city_data = {}
+timezone_city_data = {}
 
 def activate_window(user_data: dict, data_reg_window_fun, database_funcs: dict = {"func_name": "func"}):
     global city, api_data, main_app_existing, info_about_other_places, start_city, api_city_data
@@ -150,14 +151,17 @@ def activate_window(user_data: dict, data_reg_window_fun, database_funcs: dict =
 
     def update_hour_forecast():
         global api_data
-        
-        api_data = api.get_api_data(city)
+        try:
+            print(api_city_data, city)
+            api_data = api_city_data[city]
+        except:
+            api_data = api.get_api_data(city)
         cur_time = int(api.get_time_by_tz(city = city)["time"].split(":")[0])
         forecast_nine_hours = {}
         print(cur_time)
         hours = api_data["forecast"]["forecastday"][0]["hour"][cur_time:]
         if len(hours) < 9:
-            hours.extend(api_data["forecast"]["forecastday"][0]["hour"][:9 - len(hours)])
+            hours.extend(api_data["forecast"]["forecastday"][1]["hour"][:9 - len(hours)])
         # print(hours)
         for hour_forecast in hours:
             hour = hour_forecast["time"].split(" ")[1]
@@ -178,7 +182,10 @@ def activate_window(user_data: dict, data_reg_window_fun, database_funcs: dict =
                 hour = forecast_nine_hours_keys[count]
                 # print(hour_forecast_tables_keys, count)
                 part = hour_forecast_tables_keys[count]
-                hour_forecast_tables[part][0].configure(True, text = hour)
+                hour_ = hour
+                if count == 0:
+                    hour_ = "Зараз"
+                hour_forecast_tables[part][0].configure(True, text = hour_)
 
                 if not os.path.exists(forecast_nine_hours[hour][0]):
                     os.chdir(fp.search_path("images\\icons"))
@@ -222,10 +229,12 @@ def activate_window(user_data: dict, data_reg_window_fun, database_funcs: dict =
         print(f"bind succeful: {what}")
         global city
         city = search_entry_field.get()
+        print("Start")
         asyncio.run(add_api_data(city))
         asyncio.run(add_other_city_data(city, True))
-        update_info_about_current_place()
-        update_hour_forecast()
+        print("???")
+        # update_info_about_current_place()
+        # update_hour_forecast()
 
     async def update_time():
         current = api.get_time_by_tz(city = city)
@@ -310,14 +319,14 @@ def activate_window(user_data: dict, data_reg_window_fun, database_funcs: dict =
                 city_text =  translator.translate(api_data["location"]["name"])
                 time_text = api_data["location"]["localtime"].split(" ")[1]
                 title = city_name
-            text_elements = {"city": [ctk.CTkLabel(master = main_bg, text = city_text, font = ("Roboto Slab", 16), fg_color = "transparent"), (14, 8)],
-                            "time": [ctk.CTkLabel(master = main_bg, text = time_text, font = ("Roboto Slab", 12), fg_color = "transparent"), (14, 33)],
-                            "weather": [ctk.CTkLabel(master = main_bg, text = get_main_weather(api_data["current"]["condition"]["text"]), font = ("Roboto Slab", 12), text_color = "#dbdbdb", fg_color = "transparent"), (14, 62)],
-                            "temp": [ctk.CTkLabel(master = main_bg, text = f"{round(api_data['current']['temp_c'])}°", font = ("Inter", 50), fg_color = "transparent"), (158, 12)],
-                            "temp_nim_max": [ctk.CTkLabel(master = main_bg, text = f"макс.: {round(min_max_t['maxtemp_c'])}°, мін.: {round(min_max_t['mintemp_c'])}°", font = ("Inter", 12), fg_color = "transparent"), (122, 62)]}
+            text_elements = {"city": [ctk.CTkLabel(master = main_bg, text = city_text, font = ("Roboto Slab", 16), fg_color = "transparent"), (14, 8, "nw")],
+                            "time": [ctk.CTkLabel(master = main_bg, text = time_text, font = ("Roboto Slab", 12), fg_color = "transparent"), (14, 33, "nw")],
+                            "weather": [ctk.CTkLabel(master = main_bg, text = get_main_weather(api_data["current"]["condition"]["text"]), font = ("Roboto Slab", 12), text_color = "#dbdbdb", fg_color = "transparent"), (14, 62, "nw")],
+                            "temp": [ctk.CTkLabel(master = main_bg, text = f"{round(api_data['current']['temp_c'])}°", font = ("Inter", 50), fg_color = "transparent"), (225, 12, "ne")],
+                            "temp_nim_max": [ctk.CTkLabel(master = main_bg, text = f"макс.: {round(min_max_t['maxtemp_c'])}°, мін.: {round(min_max_t['mintemp_c'])}°", font = ("Inter", 12), fg_color = "transparent"), (225, 62, "ne")]}
             for el in text_elements:
                 element = text_elements[el]
-                element[0].place(x = element[1][0], y = element[1][1])
+                element[0].place(x = element[1][0], y = element[1][1], anchor = element[1][2])
             main_bg.pack(pady = 16)
             print("Place other city " + city_name)
             info_about_other_places.update({title: {"main": main_bg, "city": city_name, "elements": text_elements, "coors": [19, 31 + len(info_about_other_places) * 133]}})

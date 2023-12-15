@@ -10,6 +10,7 @@ import pynput
 
 widget_launched = 0
 weather_id, city, app, app_size, translator, move_click, mouse_coordinates, max_coordinates, blank_spase, definition_mouse_and_screen, last_click, weather_full = 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+app = ctk.CTk(fg_color = "#072038")
 
 def create_widget(data, data_reg_window_fun, database_functions: dict = {"func_name": "func"}):
     global weather_id, city, app, app_size, translator, move_click, mouse_coordinates, max_coordinates, blank_spase, definition_mouse_and_screen, last_click, weather_full, widget_launched
@@ -19,7 +20,6 @@ def create_widget(data, data_reg_window_fun, database_functions: dict = {"func_n
     city = data["City"]
 
     app_size = (350, 350)
-    app = ctk.CTk(fg_color = "#072038")
     app.geometry(f"{app_size[0]}x{app_size[1]}+{app.winfo_screenwidth() // 2 - app_size[0] // 2}+{app.winfo_screenheight() // 2 - app_size[1] // 2}") 
     app.title("Weather")
 

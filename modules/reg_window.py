@@ -126,7 +126,8 @@ def create_data_reg_window():
                 "Country": country,
                 "City": city,
                 "Name": name,
-                "Surname": surname
+                "Surname": surname,
+                "City_list": city
             })
             show_data()
         else:
@@ -163,10 +164,11 @@ def create_data_reg_window():
         button_save.configure(True, command = open_widget, text = "Перейти до додатку")
     else:
         button_save.configure(False, command = save_data)
-    with open(fp.search_path("data\\id.json")) as file:
-        ID = json.load(file)["ID"]
-    if len(database.read_data_by_id()) >= ID - 2:
-        show_data()
+    if os.path.exists(fp.search_path("data\\id.json")):
+        with open(fp.search_path("data\\id.json")) as file:
+            ID = json.load(file)["ID"]
+        if len(database.read_data_by_id()) >= ID - 2:
+            show_data()
     window.place(x = 0, y = 0)
     main_text.place(x = app_size[0] // 2, y = 42, anchor = "n")
     button_save.place(x = app_size[0] // 2, y = 546, anchor = "n")
