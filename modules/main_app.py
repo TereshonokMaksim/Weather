@@ -28,7 +28,7 @@ def activate_window(user_data: dict, data_reg_window_fun, database_funcs: dict =
         city = "Київ"
         user_name = user_data
     app = ctk.CTkToplevel()
-    app.geometry("1200x800")
+    app.geometry(f"1200x800+{(app.winfo_screenwidth() - 1200) // 2}+{(app.winfo_screenheight() - 800) // 2}")
 
     translator = GoogleTranslator(target = "uk")
     TRANSPARENT = app._apply_appearance_mode(['#f2f2f2','#000001'])
@@ -46,7 +46,8 @@ def activate_window(user_data: dict, data_reg_window_fun, database_funcs: dict =
         master = window,
         width = 281, height = 800, border_width = 3,
         border_color = "#096c82", fg_color = "#096c82",
-        corner_radius = 20, bg_color = TRANSPARENT, scrollbar_button_color = "#096c82"
+        corner_radius = 20, bg_color = TRANSPARENT, scrollbar_button_color = "#096c82",
+        scrollbar_button_hover_color = "#096c82" 
     )
     icon = ctk.CTkLabel(
         master = window,
@@ -68,13 +69,13 @@ def activate_window(user_data: dict, data_reg_window_fun, database_funcs: dict =
                                         )
     # search field section
     main_search_background = ctk.CTkFrame(master = window, width = 216, height = 42, corner_radius = 20,
-                                        fg_color = "#096c82", border_width = 3, border_color = "#dbdbdb"
-                                        )
+                                          fg_color = "#096c82", border_width = 3, border_color = "#dbdbdb"
+                                         )
     search_entry_field = ctk.CTkEntry(
-                                        master = main_search_background, width = 130, height = 35,
-                                        fg_color = "transparent", placeholder_text = "пошук", 
-                                        font = ctk.CTkFont('Roboto Slab', 16), text_color = "#dbdbdb", 
-                                        placeholder_text_color = "#dbdbdb", border_width = 0
+                                      master = main_search_background, width = 130, height = 35,
+                                      fg_color = "transparent", placeholder_text = "пошук", 
+                                      font = ctk.CTkFont('Roboto Slab', 16), text_color = "#dbdbdb", 
+                                      placeholder_text_color = "#dbdbdb", border_width = 0
     )
     search_button = ctk.CTkButton(master = main_search_background, 
                                   width = 27, height = 27, fg_color = "transparent",
@@ -88,7 +89,7 @@ def activate_window(user_data: dict, data_reg_window_fun, database_funcs: dict =
         print("not enter reg")
     user_account_enter = ctk.CTkButton(master = window,
                                        width = 50, height = 60, fg_color = "transparent",
-                                       command = enter_acc, text = " ", hover_color = "#096c82",
+                                       command = enter_acc, text = " ", hover_color = "#5da7b1",
                                        image = ctk.CTkImage(Image.open(fp.search_path("images\\icons\\user_icon.png")), size = (50, 50)),
                                        font = ctk.CTkFont('Inter', 20, "bold")
                                        )
@@ -151,9 +152,10 @@ def activate_window(user_data: dict, data_reg_window_fun, database_funcs: dict =
         global api_data
         
         api_data = api.get_api_data(city)
+        cur_time = int(api.get_time_by_tz(city = city)["time"].split(":")[0])
         forecast_nine_hours = {}
-        print(time.strftime("%H"))
-        hours = api_data["forecast"]["forecastday"][0]["hour"][int(time.strftime("%H")):]
+        print(cur_time)
+        hours = api_data["forecast"]["forecastday"][0]["hour"][cur_time:]
         if len(hours) < 9:
             hours.extend(api_data["forecast"]["forecastday"][0]["hour"][:9 - len(hours)])
         # print(hours)
@@ -164,7 +166,7 @@ def activate_window(user_data: dict, data_reg_window_fun, database_funcs: dict =
                     os.chdir(fp.search_path("images\\icons"))
                     icon_name = api_data['current']['condition']['text'].split(" ")
                     icon_name = f"{api_data['current']['condition']['text']}_icon.png"
-                    urllib.request.urlretrieve(hour_forecast["condition"]["icon"], icon_name)
+                    urllib.request.urlretrieve(f'https:{hour_forecast["condition"]["icon"]}', icon_name)
                     os.chdir(__file__ + "/..")
                     forecast_nine_hours.update({hour: [fp.search_path(f"images\\icons\\{hour_forecast['condition']['text']}_icon.png"), f"{round(hour_forecast['temp_c'])}°",
                                                         hour_forecast["condition"]]})
@@ -225,10 +227,13 @@ def activate_window(user_data: dict, data_reg_window_fun, database_funcs: dict =
         update_info_about_current_place()
         update_hour_forecast()
 
-    def update_time():
-        current_time["current_time"].configure(True, text = f"{time.strftime('%H')}:{time.strftime('%M')}")
-        current_time["date"].configure(True, text = f"{time.strftime('%d')}.{time.strftime('%m')}.{time.strftime('%Y')}")
-        app.after(60000, update_time)
+    async def update_time():
+        current = api.get_time_by_tz(city = city)
+        current_time["week_day"].configure(True, text = current["week_day"])
+        current_time["current_time"].configure(True, text = current["time"])
+        date = current["date"].split("/")
+        current_time["date"].configure(True, text = ".".join(date))
+        app.after(60000, lambda: asyncio.run(update_time()))
 
     def update_info_about_current_place():
         api_data = api.get_api_data(city)
@@ -251,7 +256,7 @@ def activate_window(user_data: dict, data_reg_window_fun, database_funcs: dict =
         day_data = api_data["forecast"]["forecastday"][0]["day"]
         info_current_pos["max_min_temperature"].configure(True, text = f"↑{round(day_data['maxtemp_c'])}° ↓{round(day_data['mintemp_c'])}°")
         icon.configure(True, image = ctk.CTkImage(Image.open(fp.search_path(f"images\\icons\\{weather_raw}_icon.png")), size = (165, 165)))
-        update_time()
+        asyncio.run(update_time())
         
     info_about_other_places = {}
 
@@ -280,13 +285,13 @@ def activate_window(user_data: dict, data_reg_window_fun, database_funcs: dict =
             ):
         global info_about_other_places, start_city, api_city_data
         city_data = database_funcs["read"](_index_data = 5)["data"]
-        print(f"pre if: \nnot in: {city_name not in city_data}\ncity_data = {city_data}")
+        # print(f"pre if: \nnot in: {city_name not in city_data}\ncity_data = {city_data}")
         if city_name not in city_data or add_in_database == False:
             print("after if")
             if add_in_database:
                 database_funcs["edit"](data = {"City_list": f"{city_data},{city_name}"})
             api_data = api_city_data[city_name]
-            print(api_data)
+            # print(api_data)
             main_bg = ctk.CTkButton(master = side_panel,
                                     width = 236, height = 101, text = " ",
                                     fg_color = "#096c82", 
