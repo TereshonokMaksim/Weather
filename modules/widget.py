@@ -14,6 +14,12 @@ app = ctk.CTk(fg_color = "#072038")
 
 def create_widget(data, data_reg_window_fun, database_functions: dict = {"func_name": "func"}):
     global weather_id, city, app, app_size, translator, move_click, mouse_coordinates, max_coordinates, blank_spase, definition_mouse_and_screen, last_click, weather_full, widget_launched
+    def get_main_weather(full_weather):
+        full_weather = translator.translate(full_weather).split(" ")
+        if len(full_weather) > 1:
+            full_weather = full_weather[-1]
+            full_weather = f"{full_weather[0].capitalize()}{full_weather[1:]}"
+        return full_weather
     widget_launched = 1
     translator = GoogleTranslator(source = "auto", target = "uk")
     weather_id = None
@@ -74,7 +80,7 @@ def create_widget(data, data_reg_window_fun, database_functions: dict = {"func_n
         font = STANDART_FONT, text_color = STANDART_TEXT_COLOR
     )
     print(f_path.search_path(r"images\icons\reset_icon.png"))
-    image = Image.open(f_path.search_path("images\\icons\\reset_icon.png"))
+    image = Image.open(f_path.search_path("images\\reset_icon.png"))
     print(image)
     button_image = ctk.CTkImage(image, size = (25, 25))
     print(button_image)
@@ -147,37 +153,30 @@ def create_widget(data, data_reg_window_fun, database_functions: dict = {"func_n
         # try:
         temp = round(api_data["current"]["temp_c"])
         if -15 < temp < 35:
-            bg_color = ("#4dbbff", "#2457ff", "#7c849c", "#facc61", "#ffa02b", "#994000")
-            bg_color = bg_color[round((temp / 7 + 2) // 1)]
+            bg_colors = ("#4dbbff", "#2457ff", "#7c849c", "#facc61", "#ffa02b", "#994000")
+            border_colors = ("#347fad", "#183bad", "#404552", "#a1833d", "#b36f1b", "#994000")
+            bg_color = bg_colors[round((temp / 7 + 2) // 1)]
+            border_color = border_colors[round((temp / 7 + 2) // 1)]
         elif -15 >= temp:
             bg_color = "#c7f2fc"
         elif temp >= 35: 
             bg_color = "#ff2a00"
-        weather_all = translator.translate(api_data['current']['condition']['text']).split(" ")
-        weather = weather_all[0]
-        del weather_all[0]
-        weather_full = " ".join(weather_all)
+        weather_all = translator.translate(api_data['current']['condition']['text'])
+        weather = get_main_weather(weather_all)
         icon_image = f"http:{api_data['current']['condition']['icon']}"
         tempa = api_data['forecast']['forecastday'][0]['day']
         min_max_temperature_text = f"🠕{round(tempa['maxtemp_c'])}° 🠗{round(tempa['mintemp_c'])}°"
         
-        # except:
-        #     temp = "ℵ1"
-        #     bg_color = "#c300ff"
-        #     # city = "Milky Way"
-        #     icon_image = "https://www.worldit.academy/media/staff/photo/IMG_0016.jpeg"
-        #     weather = "Nuclear winter"
-        #     min_max_temperature_text = "🠕SSGG(3)° 🠗-TREE(3)°"
-        
         reset_button.configure(True, hover_color = bg_color)
+        background.configure(True, border_color = border_color)
         background.configure(True, fg_color = bg_color)
         temp_label.configure(True, text = f"{temp}º")
         city_label.configure(True, text = city)
         weather_text.configure(True, text = weather)
-        weather_full_text.configure(True, text = weather_full)
+        weather_full_text.configure(True, text = weather_all)
         min_max_temperature.configure(True, text = min_max_temperature_text)
         
-        os.chdir(f_path.search_path("images\\icons"))
+        os.chdir(f_path.search_path("images"))
         icon_name = api_data['current']['condition']['text'].split(" ")
         icon_name = f"{api_data['current']['condition']['text']}_icon.png"
         urllib.request.urlretrieve(icon_image, icon_name)
@@ -200,7 +199,7 @@ def create_widget(data, data_reg_window_fun, database_functions: dict = {"func_n
 
 
     background.place(x = 0, y = 0)
-    temp_label.place(x = 340, y = 200, anchor = "e")
+    temp_label.place(x = 340, y = 230, anchor = "e")
     city_label.place(x = 340, y = 300, anchor = "e")
     weather_icon.place(x = 18, y = 17)
     weather_text.place(x = 18, y = 162)

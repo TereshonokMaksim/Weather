@@ -9,15 +9,18 @@ from PIL import Image
 import modules.database as data
 import modules.find_path as fp
 import modules.api as api
+import calendar
 
 start_city = None
 city, api_data = "Дніпро", ""
 main_app_existing = False
+city_list = []
+tz_dnipro = {}
 info_about_other_places = {}
 api_city_data = {}
 timezone_city_data = {}
 
-def activate_window(user_data: dict, data_reg_window_fun, database_funcs: dict = {"func_name": "func"}):
+def activate_window(user_data: dict, data_reg_window_fun):
     global city, api_data, main_app_existing, info_about_other_places, start_city, api_city_data
     
     api_city_data = {}
@@ -57,7 +60,7 @@ def activate_window(user_data: dict, data_reg_window_fun, database_funcs: dict =
     )
     delete_city = ctk.CTkButton(master = window,
                                 width = 50, height = 50, fg_color = "transparent",
-                                image = ctk.CTkImage(Image.open(fp.search_path("images\\icons\\trashbin_icon.png")), size = (50, 50)), text = " ", command = lambda: 1 + 1, hover_color = "#5da7b1")
+                                image = ctk.CTkImage(Image.open(fp.search_path("images\\trashbin_icon.png")), size = (50, 50)), text = " ", command = lambda: 1 + 1, hover_color = "#5da7b1")
                                 
     def close_command():
         global main_app_existing
@@ -81,7 +84,7 @@ def activate_window(user_data: dict, data_reg_window_fun, database_funcs: dict =
     search_button = ctk.CTkButton(master = main_search_background, 
                                   width = 27, height = 27, fg_color = "transparent",
                                   hover_color = main_search_background.cget("fg_color"), command = lambda: 1 + 1,
-                                  text = " ", image = ctk.CTkImage(Image.open(fp.search_path("images\\icons\\search_icon.png")), size = (27, 27)))
+                                  text = " ", image = ctk.CTkImage(Image.open(fp.search_path("images\\search_icon.png")), size = (27, 27)))
 
     # user account data section
     def enter_acc():
@@ -91,7 +94,7 @@ def activate_window(user_data: dict, data_reg_window_fun, database_funcs: dict =
     user_account_enter = ctk.CTkButton(master = window,
                                        width = 50, height = 60, fg_color = "transparent",
                                        command = enter_acc, text = " ", hover_color = "#5da7b1",
-                                       image = ctk.CTkImage(Image.open(fp.search_path("images\\icons\\user_icon.png")), size = (50, 50)),
+                                       image = ctk.CTkImage(Image.open(fp.search_path("images\\user_icon.png")), size = (50, 50)),
                                        font = ctk.CTkFont('Inter', 20, "bold")
                                        )
 
@@ -152,27 +155,26 @@ def activate_window(user_data: dict, data_reg_window_fun, database_funcs: dict =
     def update_hour_forecast():
         global api_data
         try:
-            print(api_city_data, city)
+            # print(api_city_data, city)
             api_data = api_city_data[city]
         except:
             api_data = api.get_api_data(city)
-        cur_time = int(api.get_time_by_tz(city = city)["time"].split(":")[0])
+        cur_time = int(time.strftime('%H')) - tz_dnipro[city]
         forecast_nine_hours = {}
         print(cur_time)
         hours = api_data["forecast"]["forecastday"][0]["hour"][cur_time:]
         if len(hours) < 9:
             hours.extend(api_data["forecast"]["forecastday"][1]["hour"][:9 - len(hours)])
-        # print(hours)
         for hour_forecast in hours:
             hour = hour_forecast["time"].split(" ")[1]
             if len(forecast_nine_hours) < 9:
-                if not os.path.exists(f"images\\icons\\{hour_forecast['condition']['text']}_icon.png"):
-                    os.chdir(fp.search_path("images\\icons"))
+                if not os.path.exists(f"images\\{hour_forecast['condition']['text']}_icon.png"):
+                    os.chdir(fp.search_path("images"))
                     icon_name = api_data['current']['condition']['text'].split(" ")
                     icon_name = f"{api_data['current']['condition']['text']}_icon.png"
                     urllib.request.urlretrieve(f'https:{hour_forecast["condition"]["icon"]}', icon_name)
                     os.chdir(__file__ + "/..")
-                    forecast_nine_hours.update({hour: [fp.search_path(f"images\\icons\\{hour_forecast['condition']['text']}_icon.png"), f"{round(hour_forecast['temp_c'])}°",
+                    forecast_nine_hours.update({hour: [fp.search_path(f"images\\{hour_forecast['condition']['text']}_icon.png"), f"{round(hour_forecast['temp_c'])}°",
                                                         hour_forecast["condition"]]})
         
         if len(hour_forecast_tables) != 0:
@@ -180,7 +182,6 @@ def activate_window(user_data: dict, data_reg_window_fun, database_funcs: dict =
             hour_forecast_tables_keys = list(hour_forecast_tables)
             for count in range(9):
                 hour = forecast_nine_hours_keys[count]
-                # print(hour_forecast_tables_keys, count)
                 part = hour_forecast_tables_keys[count]
                 hour_ = hour
                 if count == 0:
@@ -188,9 +189,8 @@ def activate_window(user_data: dict, data_reg_window_fun, database_funcs: dict =
                 hour_forecast_tables[part][0].configure(True, text = hour_)
 
                 if not os.path.exists(forecast_nine_hours[hour][0]):
-                    os.chdir(fp.search_path("images\\icons"))
+                    os.chdir(fp.search_path("images"))
                     icon_name = forecast_nine_hours[hour][2]["text"]
-                    # print(icon_name)
                     urllib.request.urlretrieve(f"http:{forecast_nine_hours[hour][2]['icon']}", f"{icon_name}_icon.png")
                     os.chdir(__file__ + "/..")
 
@@ -200,9 +200,8 @@ def activate_window(user_data: dict, data_reg_window_fun, database_funcs: dict =
             for hour in forecast_nine_hours:
                 
                 if not os.path.exists(forecast_nine_hours[hour][0]):
-                    os.chdir(fp.search_path("images\\icons"))
+                    os.chdir(fp.search_path("images"))
                     icon_name = forecast_nine_hours[hour][2]["text"]
-                    # print(icon_name)
                     urllib.request.urlretrieve(f"http:{forecast_nine_hours[hour][2]['icon']}", f"{icon_name}_icon.png")
                     os.chdir(__file__ + "/..")
                 hour_forecast_tables.update({f"{10 + len(hour_forecast_tables) * 90},55": [ctk.CTkLabel(master = current_weather_table, width = 0, height = 31,
@@ -223,7 +222,6 @@ def activate_window(user_data: dict, data_reg_window_fun, database_funcs: dict =
     async def add_api_data(city_name: str = "London"):
         global api_city_data 
         api_city_data.update(await api.async_get_api_data([city_name]))
-        # print(await api.async_get_api_data([city_name]))
 
     def update_city_data(what = "test"):
         print(f"bind succeful: {what}")
@@ -237,10 +235,11 @@ def activate_window(user_data: dict, data_reg_window_fun, database_funcs: dict =
         # update_hour_forecast()
 
     async def update_time():
-        current = api.get_time_by_tz(city = city)
-        current_time["week_day"].configure(True, text = current["week_day"])
-        current_time["current_time"].configure(True, text = current["time"])
-        date = current["date"].split("/")
+        global tz_dnipro
+        current_tz_dnipro = tz_dnipro[city]
+        current_time["week_day"].configure(True, text = translator.translate(time.strftime("%A")))
+        current_time["current_time"].configure(True, text = f"{int(time.strftime('%H')) - current_tz_dnipro}:{time.strftime('%M')}")
+        date = [time.strftime('%d'), time.strftime('%m'), time.strftime('%Y')]
         current_time["date"].configure(True, text = ".".join(date))
         app.after(60000, lambda: asyncio.run(update_time()))
 
@@ -264,7 +263,14 @@ def activate_window(user_data: dict, data_reg_window_fun, database_funcs: dict =
             info_current_pos["sub_weather"].configure(True, text = " ")
         day_data = api_data["forecast"]["forecastday"][0]["day"]
         info_current_pos["max_min_temperature"].configure(True, text = f"↑{round(day_data['maxtemp_c'])}° ↓{round(day_data['mintemp_c'])}°")
-        icon.configure(True, image = ctk.CTkImage(Image.open(fp.search_path(f"images\\icons\\{weather_raw}_icon.png")), size = (165, 165)))
+        path = fp.search_path(f"images\\{weather_raw}_icon.png")
+        if not os.path.exists(path):
+            os.chdir(fp.search_path("images"))
+            icon_name = api_data['current']['condition']['text'].split(" ")
+            icon_name = f"{api_data['current']['condition']['text']}_icon.png"
+            urllib.request.urlretrieve(f"http:{api_data['current']['condition']['icon']}", icon_name)
+            os.chdir(__file__ + "/..")
+        icon.configure(True, image = ctk.CTkImage(Image.open(path), size = (165, 165)))
         asyncio.run(update_time())
         
     info_about_other_places = {}
@@ -292,15 +298,15 @@ def activate_window(user_data: dict, data_reg_window_fun, database_funcs: dict =
             add_in_database: bool = False, 
             city_data: list = ["London"]
             ):
-        global info_about_other_places, start_city, api_city_data
-        city_data = database_funcs["read"](_index_data = 5)["data"]
-        # print(f"pre if: \nnot in: {city_name not in city_data}\ncity_data = {city_data}")
-        if city_name not in city_data or add_in_database == False:
+        global info_about_other_places, start_city, api_city_data, tz_dnipro
+        if city_name not in city_list or add_in_database == False:
             print("after if")
             if add_in_database:
-                database_funcs["edit"](data = {"City_list": f"{city_data},{city_name}"})
+                data.edit_data(data = {"City_list": f"{city_data},{city_name}"})
+                city_list.append(city_name)
             api_data = api_city_data[city_name]
-            # print(api_data)
+            city_time = int(api_data["location"]["localtime"].split()[1].split(":")[0])
+            tz_dnipro.update({city_name: int(time.strftime("%H")) - city_time})
             main_bg = ctk.CTkButton(master = side_panel,
                                     width = 236, height = 101, text = " ",
                                     fg_color = "#096c82", 
@@ -316,7 +322,8 @@ def activate_window(user_data: dict, data_reg_window_fun, database_funcs: dict =
                 main_bg.configure(True, hover_color = "#5da7b1")
                 start_city = city_name
             else:
-                city_text =  translator.translate(api_data["location"]["name"])
+                city_text =  translator.translate(city_name)
+
                 time_text = api_data["location"]["localtime"].split(" ")[1]
                 title = city_name
             text_elements = {"city": [ctk.CTkLabel(master = main_bg, text = city_text, font = ("Roboto Slab", 16), fg_color = "transparent"), (14, 8, "nw")],
@@ -331,12 +338,19 @@ def activate_window(user_data: dict, data_reg_window_fun, database_funcs: dict =
             print("Place other city " + city_name)
             info_about_other_places.update({title: {"main": main_bg, "city": city_name, "elements": text_elements, "coors": [19, 31 + len(info_about_other_places) * 133]}})
 
-    async def read_city_list_data():
-        global city, api_city_data
-        city_data = database_funcs["read"](_index_data = 5)["data"]
+    async def read_main_city_list():
+        global city, api_city_data, city_list
+        city_data = data.read_data_by_id(_index_data = 5)["data"]
         cities = city_data.split(",")
         api_city_data = await api.async_get_api_data(cities)
-        for city_n in cities:
+        for city_n in cities[:6]:
+            print(f"New city: {city_n}")
+            await add_other_city_data(city_name = city_n)
+
+    async def read_other_city_list():
+        global city, api_city_data, city_list
+        api_city_data.update(await api.async_get_api_data(city_list[6:]))
+        for city_n in city_list[6:]:
             print(f"New city: {city_n}")
             await add_other_city_data(city_name = city_n)
         
@@ -369,6 +383,7 @@ def activate_window(user_data: dict, data_reg_window_fun, database_funcs: dict =
             cities = data.read_data_by_id(_index_data = 5)["data"].split(",")
             del info_about_other_places["active"]
             cities.remove(deleted_city)
+            city_list.remove(delete_city)
             data.edit_data(data = {"City_list": ",".join(cities)})
             info_about_other_places.update({"active": info_about_other_places.pop(list(info_about_other_places)[0])})
             for city in info_about_other_places:
@@ -376,7 +391,15 @@ def activate_window(user_data: dict, data_reg_window_fun, database_funcs: dict =
             for city in info_about_other_places:
                 info_about_other_places[city]["main"].pack(pady = 16)  
             config_active()
-    
+
+    def update_time_in_another_places():
+        keys = list(info_about_other_places)
+        # print(tz_dnipro)
+        for key in keys:
+            info_about_other_places[key]["elements"]["time"][0].configure(True, text = f"{int(time.strftime('%H')) - tz_dnipro[info_about_other_places[key]['city']]}:{time.strftime('%M')}")
+        app.after(50000, update_time_in_another_places)
+            
+    asyncio.run(read_main_city_list())
     delete_city.configure(True, command = delete_new_city)
     # Редактирование всех элементов и задавание параметров
     search_entry_field.bind(command = update_city_data, sequence = '<Return>')
@@ -385,6 +408,7 @@ def activate_window(user_data: dict, data_reg_window_fun, database_funcs: dict =
     update_hour_forecast()
     user_account_enter.configure(True, text = user_name)
     user_account_enter.configure(True, width = 70 + 10 * len(user_name))
+    update_time_in_another_places()
     # print(f"width in calculations = {70 + 10 * len(user_name_text.cget('text'))}\nreal width = {user_account_enter.cget('width')}\ntext and len = {user_name_text.cget('text')}, {len(user_name_text.cget('text'))}")
 
     # Размещение всех элементов окна
@@ -403,7 +427,6 @@ def activate_window(user_data: dict, data_reg_window_fun, database_funcs: dict =
     a_line.place(x = 325, y = 476)
     place_current_info()
     place_hour_forecast()
-    asyncio.run(read_city_list_data())
+    asyncio.run(read_other_city_list())
     # app.mainloop()
-    
-        
+

@@ -176,7 +176,26 @@ def create_data_reg_window():
     reg_app.mainloop()
 
 
-
+if not os.path.exists(fp.search_path("data")):
+    try:
+        os.mkdir(fp.search_path("data"))
+    except OSError:
+        print("data dir is arleady exists")
+    except:
+        print("unknown error at creating data folder")
+if not os.path.exists("data\\UserData.dp"):
+    with open(fp.search_path("data\\UserData.dp"), "x"):
+        pass
+    print("database file created")
+    
+database.create_table("main_data", {"ID": "INTEGRER", "Country": "TEXT", "City": "TEXT", "Name": "TEXT", "Surname": "TEXT", "City_list": "TEXT"})
+if len(database.read_data()) == 0:
+    database.add_data(add_info = {"ID": -1,
+                                  "Country": "Mars",
+                                  "City": "Troy",
+                                  "Name": "Spirit",
+                                  "Surname": "Unexpected good researcher",
+                                  "City_list": "Winter Haven, Troy"})
 if os.path.exists(fp.search_path("data\\id.json")):
     with open(fp.search_path("data\\id.json"), "r") as file:
         ID = json.load(file)["ID"]

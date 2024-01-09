@@ -39,7 +39,7 @@ def add_data(name_table: str = "main_data", add_info: dict = {"column name": "ne
         cursor.execute(action, values)
         database.commit()    
     
-def read_data(name_table):
+def read_data(name_table: str = "main_data"):
 
     os.chdir(fp.search_path("data"))
     with sqlite3.connect("UserData.dp") as database:
